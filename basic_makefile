@@ -1,0 +1,42 @@
+CC = clang
+
+BUFFER_SIZE ?= 4096
+
+CFLAGS = -Wall -Werror -Wextra -g -fPIC -DBUFFER_SIZE=$(BUFFER_SIZE)
+LDFLAGS = -shared
+
+SRC = get_next_line.c get_next_line_utils.c
+OBJ = $(SRC:.c=.o)
+
+SRC_BONUS = $(SRC:.c=_bonus.c)
+OBJ_BONUS = $(SRC_BONUS:.c=.o)
+
+NAME = libgnl.so
+NAME_BONUS = libgnlb.so
+
+all: $(NAME)
+
+ $(NAME): $(OBJ)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^
+
+bonus: $(NAME_BONUS)
+
+ $(NAME_BONUS): $(OBJ_BONUS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJ) $(OBJ_BONUS)
+
+fclean: clean
+	rm -f $(NAME) $(NAME_BONUS)
+
+re: fclean all
+
+rebonus: fclean bonus
+
+retests: tests
+
+.PHONY: all clean fclean re tests retests debug redebug bonus rebonus
