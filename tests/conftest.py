@@ -7,14 +7,18 @@ from cffi import FFI
 
 BUFFER_SIZE_VALUES = ["1", "16", "32", "42", "4096", "8192"]
 PROJECT_ROOT = ""
+
+# __file__ is tests/conftest.py
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+# TESTER_ROOT is the parent directory (where your Makefile lives)
+TESTER_ROOT = os.path.dirname(TEST_DIR) 
 
 
 def pytest_addoption(parser):
     parser.addoption(
         "--project-path",
         action="store",
-        default="..",
+        default="..", # Points to the C project root (sibling to tester root)
         help="Path to the project directory",
     )
     parser.addoption(
@@ -26,12 +30,13 @@ def pytest_addoption(parser):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    print(f"[INFO] Cleaning up compiled libraries in {TEST_DIR}...", flush=True)
+    # Use TESTER_ROOT to find the Makefile
+    print(f"[INFO] Cleaning up compiled libraries in {TESTER_ROOT}...", flush=True)
     try:
         subprocess.run(
             ["make", "fclean", "AUTHORIZED_INVOKER=1"],
             check=False,
-            cwd=TEST_DIR,
+            cwd=TESTER_ROOT,  # <--- CHANGED to TESTER_ROOT
             capture_output=True,
             text=True,
         )
@@ -48,8 +53,9 @@ def pytest_configure(config):
     lib_targets = [
         *[(bs, f"libgnl_{bs}.so") for bs in BUFFER_SIZE_VALUES],
     ]
-    if (config.getoption("--bonus")):
+    if config.getoption("--bonus"):
         lib_targets.append((BUFFER_SIZE_VALUES[-1], "libgnl_bonus.so"))
+        
     for bs, target in lib_targets:
         print(f"[INFO] Compiling {target} (BUFFER_SIZE={bs})...", flush=True)
         result = subprocess.run(
@@ -62,7 +68,7 @@ def pytest_configure(config):
             ],
             capture_output=True,
             text=True,
-            cwd=TEST_DIR,
+            cwd=TESTER_ROOT,  # <--- CHANGED to TESTER_ROOT
             check=False,
         )
         if result.returncode != 0:
@@ -95,8 +101,10 @@ def load_lib(libname: str, bs: int):
         line for line in header_content.splitlines() if not line.strip().startswith("#")
     )
     ffi.cdef(cdef_str)
-    lib = os.path.join(TEST_DIR, libname)
-    return ffi, ffi.dlopen(lib)
+    
+    # The .so files are compiled into TESTER_ROOT by the Makefile
+    lib_path = os.path.join(TESTER_ROOT, libname)  # <--- CHANGED to TESTER_ROOT
+    return ffi, ffi.dlopen(lib_path)
 
 
 @pytest.fixture(params=BUFFER_SIZE_VALUES, scope="session")
@@ -112,6 +120,9 @@ def lib_bonus(request):
     _, C = load_lib("libgnl_bonus.so", bs)
     yield C
 
+
+# If you moved `files/` inside `tests/`, this stays as TEST_DIR.
+# If you kept `files/` in the root, change this to TESTER_ROOT.
 FILES_DIR = os.path.join(TEST_DIR, "files")
 
 @contextmanager
