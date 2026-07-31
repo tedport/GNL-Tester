@@ -57,7 +57,7 @@ You can pass specific flags to `pytest` to customize your test run:
 
 ## Project Structure
 ```
-gnlTester/
+GNL-Tester/
 ├── Makefile                 # Handles dynamic .so compilation
 ├── pyproject.toml           # Python dependencies (pytest, cffi)
 ├── README.md                # This file
