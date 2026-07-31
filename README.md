@@ -1,4 +1,4 @@
-# gnlTester
+# GNL-Tester
 
 A comprehensive, automated testing suite for the 42 `get_next_line` project. It uses `pytest` and `cffi` to dynamically compile your code with various `BUFFER_SIZE` configurations and rigorously test it against edge cases, pre-generated files, and randomized stress tests.
 
